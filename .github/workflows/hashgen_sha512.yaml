@@ -10,12 +10,12 @@ on:
       hash_type:
         description: 'Hashing algorithm to use'
         required: true
-        default: 'sha512'
+        default: 'sha-512'
         type: choice
         options:
-          - sha512
-          - sha256
-          - sha1
+          - sha-512
+          - sha-256
+          - sha-1
 jobs:
   hash_password:
     runs-on: ubuntu-latest

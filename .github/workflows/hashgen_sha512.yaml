@@ -1,0 +1,36 @@
+name: Hash Password via Workflow Input
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_password:
+        description: "Enter the user's password"
+        required: true
+        type: string
+      hash_type:
+        description: 'Hashing algorithm to use'
+        required: true
+        default: 'sha512'
+        type: choice
+        options:
+          - sha512
+          - sha256
+          - sha1
+jobs:
+  hash_password:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install mkpasswd (from whois)
+        run: sudo apt-get update && sudo apt-get install -y whois
+
+      - name: Hash the user-supplied password
+        id: hash
+        run: |
+          HASH=$(echo "${{ inputs.user_password }}" | mkpasswd -m inputs.hash_type -s)
+          echo "Hashed password: $HASH"
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Save to file or display
+        run: |
+          echo "Final hash: ${{ steps.hash.outputs.hash }}"

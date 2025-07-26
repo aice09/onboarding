@@ -27,9 +27,8 @@ jobs:
       - name: Hash the user-supplied password
         id: hash
         run: |
-          HASH=$(echo "${{ inputs.user_password }}" | mkpasswd -m inputs.hash_type -s)
-          echo "Hashed password: $HASH"
-          echo "hash=$HASH" >> $GITHUB_OUTPUT
+          HASH=$(echo "${{ github.event.inputs.user_password }}" | mkpasswd -m ${{ github.event.inputs.hash_type }} -s)
+          echo "hash=$HASH" >> "$GITHUB_OUTPUT"
 
       - name: Save to file or display
         run: |

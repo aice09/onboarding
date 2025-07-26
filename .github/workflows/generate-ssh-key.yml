@@ -1,0 +1,50 @@
+name: Generate SSH Key Pair
+
+on:
+  workflow_dispatch:
+    inputs:
+      key_type:
+        description: 'Select SSH key type'
+        required: true
+        default: ed25519
+        type: choice
+        options:
+          - rsa
+          - dsa
+          - ecdsa
+          - ed25519
+
+      key_name:
+        description: 'Enter filename (without extension)'
+        required: true
+        default: my-key
+
+jobs:
+  generate_keys:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Required Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-client putty-tools
+
+      - name: Generate SSH Key Pair
+        id: keygen
+        run: |
+          mkdir -p keys
+
+          ssh-keygen -t ${{ inputs.key_type }} -f keys/${{ inputs.key_name }} -N ""
+
+      - name: Convert to .pem and .ppk
+        run: |
+          cd keys
+
+          cp "${{ inputs.key_name }}" "${{ inputs.key_name }}.pem"
+          puttygen "${{ inputs.key_name }}" -O private -o "${{ inputs.key_name }}.ppk"
+
+      - name: Upload SSH Keys as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-keys-${{ github.run_id }}
+          path: keys/

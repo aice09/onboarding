@@ -10,9 +10,18 @@ on:
         type: choice
         options:
           - rsa
-          - dsa
           - ecdsa
           - ed25519
+
+      key_bits:
+        description: 'Select bit size (RSA: 2048/3072/4096, ECDSA: 256/384/521, ED25519: 256)'
+        required: false
+        default: '256'
+
+      email:
+        description: 'Email to use in key comment'
+        required: false
+        default: 'github@example.com'
 
       key_name:
         description: 'Enter filename (without extension)'
@@ -29,12 +38,43 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y openssh-client putty-tools
 
+      - name: Validate Key Bits
+        id: validate
+        run: |
+          case "${{ inputs.key_type }}" in
+            rsa)
+              if [[ ! "${{ inputs.key_bits }}" =~ ^(2048|3072|4096)$ ]]; then
+                echo "Invalid RSA bit size: ${{ inputs.key_bits }}. Must be 2048, 3072, or 4096."
+                exit 1
+              fi
+              ;;
+            ecdsa)
+              if [[ ! "${{ inputs.key_bits }}" =~ ^(256|384|521)$ ]]; then
+                echo "Invalid ECDSA bit size: ${{ inputs.key_bits }}. Must be 256, 384, or 521."
+                exit 1
+              fi
+              ;;
+            ed25519)
+              echo "Ed25519 always uses 256 bits. Ignoring custom bit size input."
+              ;;
+            *)
+              echo "Invalid key type."
+              exit 1
+              ;;
+          esac
+
       - name: Generate SSH Key Pair
         id: keygen
         run: |
           mkdir -p keys
 
-          ssh-keygen -t ${{ inputs.key_type }} -f keys/${{ inputs.key_name }} -N ""
+          if [[ "${{ inputs.key_type }}" == "ed25519" ]]; then
+            ssh-keygen -t ed25519 -C "${{ inputs.email }}" -f keys/${{ inputs.key_name }} -N ""
+          elif [[ "${{ inputs.key_type }}" == "ecdsa" ]]; then
+            ssh-keygen -t ecdsa -b ${{ inputs.key_bits }} -C "${{ inputs.email }}" -f keys/${{ inputs.key_name }} -N ""
+          elif [[ "${{ inputs.key_type }}" == "rsa" ]]; then
+            ssh-keygen -t rsa -b ${{ inputs.key_bits }} -C "${{ inputs.email }}" -f keys/${{ inputs.key_name }} -N ""
+          fi
 
       - name: Convert to .pem and .ppk
         run: |
